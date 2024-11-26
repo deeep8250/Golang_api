@@ -2,52 +2,71 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strconv"
 )
 
 func main() {
 
-	person := []map[string]interface{}{
-		{"id": 1, "name": "Deep", "age": 18},
-		{"id": 2, "name": "Asit", "age": 60},
-		{"id": 3, "name": "Hena", "age": 80},
-		{"id": 4, "name": "Kusom", "age": 18},
-		{"id": 5, "name": "tommy", "age": 2},
-	}
+	var personDetails []map[string]interface{}
 
-	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+	// get data ( get )
+	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		fmt.Printf("%+v\n", personDetails)
+		json.NewEncoder(w).Encode(personDetails)
+	})
 
-		json.NewEncoder(w).Encode(person)
+	// add data( post )
+	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var addPerson map[string]interface{}
+
+		if r.Method != http.MethodPost {
+			http.Error(w, "check if you select the post method or not", http.StatusBadRequest)
+			return
+		}
+
+		err := json.NewDecoder(r.Body).Decode(&addPerson)
+
+		if err != nil {
+			http.Error(w, "invalid input", http.StatusBadRequest)
+			return
+		}
+
+		personDetails = append(personDetails, addPerson)
+		json.NewEncoder(w).Encode(personDetails)
 
 	})
 
-	http.HandleFunc("/users/filter", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	//filter result by age
 
-		var secList []map[string]interface{}
+	http.HandleFunc("/filter", func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Content-Type", "application/json")
+		var personDetails2 []map[string]interface{}
+
+		if r.Method != http.MethodGet {
+			http.Error(w, "double check if you selected post option or not ", http.StatusBadRequest)
+			return
+		}
 
 		age := r.URL.Query().Get("age")
 
-		age1, err := strconv.Atoi(age)
-		if err != nil || age == "" {
+		for i := range personDetails {
+			if personDetails[i]["age"] == age {
+				personDetails2 = append(personDetails2, personDetails[i])
 
-			panic("error")
-		}
-
-		for _, i := range person {
-			if i["age"] == age1 {
-
-				secList = append(secList, i)
 			}
-
 		}
 
-		json.NewEncoder(w).Encode(secList)
+		json.NewEncoder(w).Encode(personDetails2)
+		defer r.Body.Close()
 
 	})
 
+	fmt.Printf("%+v\n", personDetails)
 	http.ListenAndServe(":8888", nil)
 
+	//v : 0.0.1.1
 }
