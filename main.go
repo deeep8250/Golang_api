@@ -65,6 +65,31 @@ func main() {
 
 	})
 
+	http.HandleFunc("/del", func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Method != http.MethodGet {
+			http.Error(w, "choose get method", http.StatusBadRequest)
+			return
+		}
+
+		name := r.URL.Query().Get("name")
+
+		personDetails2 := []map[string]interface{}{}
+
+		for _, p := range personDetails {
+			if p["name"] != name {
+				personDetails2 = append(personDetails2, p)
+			}
+		}
+		personDetails = personDetails2
+
+		json.NewEncoder(w).Encode(personDetails)
+		defer r.Body.Close()
+
+	})
+
 	fmt.Printf("%+v\n", personDetails)
 	http.ListenAndServe(":8888", nil)
 
